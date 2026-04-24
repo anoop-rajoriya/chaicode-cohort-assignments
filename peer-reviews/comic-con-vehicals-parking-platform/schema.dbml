@@ -1,0 +1,105 @@
+Table VehicaleCategories {
+  id uuid [primary key]
+  name varchar(50) [not null]
+  description varchar(255)
+  base_price decimal(3, 2) [not null]
+}
+
+Table Vehicales {
+  id uuid [primary key]
+  vehicalCategory_id uuid
+  vehical_number varchar(50) [not null]
+  licence_plate_url varchar(255)
+  type char(100) [not null]
+  brand char(100) [not null]
+  model char(100) [not null]
+  color char(50) [not null]
+  created_at datetime
+  update_at datetime
+}
+
+Table Users {
+  id uuid [primary key]
+  full_name varchar(100) [not null]
+  email varchar(75) [not null]
+  age int
+  password_has varchar(255) [not null]
+  hash_slug char(50)
+  type enum("user", "admin") [default: "user"]
+  created_at datetime
+  update_at datetime
+}
+
+Table Tickets {
+  id uuid [primary key]
+  user_id uuid [not null]
+  vehical_id uuid [not null]
+  parking_slot uuid [not null]
+  total_amount decimal(3, 2)
+  expired_at datetime [not null]
+  created_at datetime
+  update_at datetime
+}
+
+Table Sessions {
+  id uuid [primary key]
+  ticket_id uuid [not null]
+  start_time timestamp [not null]
+  end_time timestamp
+  duration timestamp
+  amount decimal(3,2) [not null]
+  type enum("initial", "renewed") [not null]
+  status enum("active", "completd") [not null]
+  created_at datetime
+}
+
+Table ParkingLevels {
+  id uuid [primary key]
+  level_number char(25) [not null]
+  name varchar(50) [not null]
+  total_zones int [not null]
+  status enum("active", "maintainance", "closed") [default: "active"]
+  created_at datetime
+}
+
+Table ParkingZones {
+  id uuid [primary key]
+  parkingLevel_id uuid [not null]
+  name varchar(50) [not null]
+  type enum("general", "vip", "reserved", "closed") [default: "general"]
+  price_modifire decimal(3, 2) [not null]
+  status enum("active", "closed") [default: "active"]
+  created_at datetime
+}
+
+Table ParkingSpots {
+  id uuid [primary key]
+  parkingZones_id uuid [not null]
+  session_id uuid [not null]
+  spot_number char(25) [not null]
+  type varchar(50) [not null]
+  is_occupied boolean [default: false]
+  status enum("available", "occupied", "reserved", "maintainance") [default: "available"]
+  created_at datetime
+}
+
+Table Payments {
+  id uuid [primary key]
+  session_id uuid [not null]
+  paid_amount decimal(3,2) [not null]
+  payment_method enum("upi", "card", "cash") [not null]
+  paid_time timestamp [not null]
+  status enum("completed", "pending", "cancelled", "refunded")
+  transaction_ref varchar(255) [not null]
+  created_at datetime
+  updated_at datetime
+}
+
+ref: VehicaleCategories.id < Vehicales.vehicalCategory_id
+ref: Users.id < Tickets.user_id
+ref: Vehicales.id - Tickets.vehical_id
+ref: Tickets.id < Sessions.ticket_id
+ref: Sessions.id - Payments.session_id
+ref: Sessions.id - ParkingSpots.session_id
+ref: ParkingZones.id < ParkingSpots.parkingZones_id
+ref: ParkingLevels.id < ParkingZones.parkingLevel_id
