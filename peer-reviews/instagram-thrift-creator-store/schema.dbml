@@ -1,0 +1,168 @@
+Project Insta_Thrift_Creator_Store {
+  database_type: 'PostgreSQL'
+  Note: 'Database for an Instagram-based thrift creator store'
+}
+
+// --- ENUMS ---
+
+Enum product_type {
+  thrifted
+  handmade
+}
+
+Enum gender_type {
+  male
+  female
+  unisex
+}
+
+Enum payment_method {
+  upi
+  bank_transfer
+  cash_on_delivery
+}
+
+Enum payment_status {
+  awaiting
+  verification
+  confirm
+  refunded
+}
+
+Enum shipping_status {
+  pending
+  shipped
+  delivered
+  cancelled
+}
+
+// --- PRODUCT SECTION ---
+
+Table product_categories {
+  id string [pk]
+  name string
+  description string
+  
+  Note: 'Categories for products (e.g., Vintage, Crochet)'
+}
+
+Table products {
+  id string [pk]
+  categories_id string [ref: > product_categories.id]
+  name string
+  description string
+  base_price decimal
+  brand_origin string
+  type product_type
+  gender gender_type
+}
+
+Table product_variations {
+  id string [pk]
+  product_id string [ref: > products.id]
+  color string
+  size string
+  exact_measurement string
+  material string
+  weight decimal
+  price_modifier decimal
+}
+
+Table inventories {
+  id string [pk]
+  product_variation_id string [unique, ref: - product_variations.id]
+  quantity int
+  low_stock_threshold int
+  last_restock date
+}
+
+// --- USER SECTION ---
+
+Table users {
+  id string [pk]
+  username string
+  first_name string
+  last_name string
+  insta_handle string
+  whatsapp_number string
+  email string
+  hashed_password string
+  hash_slug string
+  gender gender_type
+  age int
+  created_at date
+  updated_at date
+}
+
+Table users_addresses {
+  id string [pk]
+  user_id string [ref: > users.id]
+  address_line1 string
+  address_line2 string
+  city string
+  state string
+  postal_code string
+  is_default boolean [default: true]
+  updated_at date
+}
+
+// --- ORDER & TRANSACTION SECTION ---
+
+Table orders {
+  id string [pk]
+  customer_id string [ref: > users.id]
+  address_id string [ref: - users_addresses.id]
+  total_amount decimal
+  ordered_date date
+  note string
+}
+
+Table order_items {
+  id string [pk]
+  order_id string [ref: > orders.id]
+  product_variation_id string [ref: > product_variations.id]
+  quantity int
+  unit_price decimal
+  subtotal decimal
+}
+
+Table payments {
+  id string [pk]
+  order_id string [unique, ref: - orders.id]
+  payment_method payment_method
+  transaction_reference string
+  paid_amount decimal
+  payment_status payment_status
+  paid_at date
+}
+
+Table shippings {
+  id string [pk]
+  order_id string [unique, ref: - orders.id]
+  shipping_carrier string
+  shipping_cost decimal
+  shipping_status shipping_status
+  tracking_number string
+  shipped_at date
+}
+
+// --- VISUAL GROUPING ---
+
+TableGroup Product_Section {
+  product_categories
+  products
+  product_variations
+  inventories
+}
+
+TableGroup User_Section {
+  users
+  users_addresses
+}
+
+TableGroup Order_Section {
+  orders
+  order_items
+  payments
+  shippings
+}
