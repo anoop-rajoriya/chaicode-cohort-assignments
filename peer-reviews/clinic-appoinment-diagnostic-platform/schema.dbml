@@ -1,0 +1,159 @@
+Project Healthcare_Management_System {
+  database_type: 'PostgreSQL'
+  Note: 'Schema for patient management, consultations, and diagnostic reporting'
+}
+
+// --- ENUMS ---
+
+Enum gender_type {
+  male
+  female
+  other
+  prefer_not_to_say
+}
+
+Enum appointment_status {
+  scheduled
+  confirmed
+  checked_in
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+Enum diagnostic_status {
+  pending
+  scheduled
+  sample_collected
+  processing
+  completed
+  cancelled
+}
+
+Enum payment_method {
+  cash
+  credit_card
+  debit_card
+  insurance
+  upi
+  bank_transfer
+}
+
+Enum payment_status {
+  pending
+  partially_paid
+  paid
+  refunded
+  failed
+}
+
+// --- CORE TABLES ---
+
+Table patients {
+  id uuid [pk, not null]
+  first_name string [not null]
+  last_name string
+  dob date [not null]
+  gender gender_type [not null]
+  phone_number string [not null]
+  email string [not null, unique]
+  address string [not null]
+  insurance_info string
+  medical_history text [not null]
+}
+
+Table doctors {
+  id uuid [pk, not null]
+  first_name string [not null]
+  last_name string
+  specialization string [not null]
+  license_number string [not null, unique]
+  phone_number string [not null]
+  email string [not null, unique]
+  experience_years int
+}
+
+Table appointments {
+  id uuid [pk, not null]
+  doctor_id uuid [not null, ref: > doctors.id]
+  patient_id uuid [not null, ref: > patients.id]
+  scheduled_date date [not null]
+  scheduled_time timestamp [not null]
+  end_time timestamp [not null]
+  status appointment_status [not null]
+  created_at date [default: `now()`]
+}
+
+// --- CLINICAL SECTION ---
+
+Table consultation {
+  id uuid [pk, not null]
+  appointment_id uuid [unique, not null, ref: - appointments.id]
+  symptoms text [not null]
+  diagnosis text
+  vitals string [not null]
+  notes text
+  follow_up_date date
+  consultation_date date [not null]
+}
+
+Table diagnostics {
+  id uuid [pk, not null]
+  consultation_id uuid [unique, not null, ref: - consultation.id]
+  order_date date [not null]
+  scheduled_date date [not null]
+  status diagnostic_status [not null]
+  diagnostic_department string
+}
+
+Table diagnostic_tests {
+  id uuid [pk, not null]
+  diagnostic_id uuid [unique, not null, ref: - diagnostics.id]
+  name string [not null]
+  description text
+  category string [not null]
+  preparation_notes text [not null]
+}
+
+Table reports {
+  id uuid [pk, not null]
+  test_id uuid [unique, not null, ref: - diagnostic_tests.id]
+  diagnosis text [not null]
+  test_results text [not null]
+  report_file_url string
+  created_at date [default: `now()`]
+}
+
+// --- FINANCIAL SECTION ---
+
+Table payments {
+  id uuid [pk, not null]
+  consultation_id uuid [unique, not null, ref: - consultation.id]
+  total_amount decimal [not null]
+  amount_paid decimal [not null]
+  payment_method payment_method [not null]
+  payment_status payment_status [not null]
+  transaction_ref string [not null, unique]
+  payment_date date [not null]
+  payment_time timestamp [not null]
+}
+
+// --- VISUAL GROUPING ---
+
+TableGroup Patient_Care {
+  patients
+  appointments
+  doctors
+}
+
+TableGroup Clinical_Records {
+  consultation
+  diagnostics
+  diagnostic_tests
+  reports
+}
+
+TableGroup Billing {
+  payments
+}
