@@ -1,0 +1,275 @@
+Project Fitness_Coaching_Platform {
+  database_type: 'PostgreSQL'
+  Note: 'Schema for a fitness coaching platform connecting coaches and clients'
+}
+
+// --- ENUMS ---
+
+Enum user_role {
+  coach
+  client
+}
+
+Enum gender_type {
+  male
+  female
+  unisex
+}
+
+Enum booking_status {
+  pending
+  confirmed
+  cancelled
+}
+
+Enum subscription_status {
+  active
+  expired
+  cancelled
+}
+
+Enum payment_method {
+  card
+  upi
+  bank_transfer
+}
+
+Enum transaction_status {
+  pending
+  success
+  failed
+  refunded
+}
+
+Enum video_type {
+  recorded
+  live
+}
+
+Enum resource_type {
+  video
+  diet_plan
+  training_plan
+}
+
+Enum difficulty_level {
+  beginner
+  intermediate
+  advanced
+}
+
+Enum meal_type {
+  breakfast
+  lunch
+  dinner
+}
+
+Enum checkin_status {
+  pending
+  renewed
+}
+
+// --- USER SECTION ---
+
+Table users {
+  id uuid [pk]
+  role user_role
+  first_name string
+  last_name string
+  avatar_url string
+  password_hash string
+  hash_slug string
+  email string [unique]
+  phone_number string
+  created_at timestamp
+  is_active boolean
+}
+
+Table coaches {
+  id uuid [pk]
+  user_id uuid [ref: - users.id]
+  bio string
+  specialization string
+  certifications string
+  rating int
+  is_available boolean
+}
+
+Table clients {
+  id uuid [pk]
+  user_id uuid [ref: - users.id]
+  date_of_birth date
+  gender gender_type
+  weight_in_kg decimal
+  height_in_cm decimal
+  body_fat_percentage decimal
+  fitness_goal string
+  activity_level string
+}
+
+// --- BOOKING & SUBSCRIPTION SECTION ---
+
+Table consultation_slots {
+  id uuid [pk]
+  coach_id uuid [ref: > coaches.id]
+  consulting_date date
+  start_time timestamp
+  end_time timestamp
+  max_participant int
+}
+
+Table bookings {
+  id uuid [pk]
+  slot_id uuid [ref: > consultation_slots.id]
+  subscription_id uuid [ref: > client_subscriptions.id]
+  booking_date date
+  status booking_status
+}
+
+Table subscription_plans {
+  id uuid [pk]
+  coach_id uuid [ref: > coaches.id]
+  name string
+  description string
+  max_slots_in_month int
+  price decimal
+  duration_in_days int
+  type string // Refined based on platform needs
+  is_active boolean
+}
+
+Table client_subscriptions {
+  id uuid [pk]
+  client_id uuid [ref: > clients.id]
+  plan_id uuid [ref: > subscription_plans.id]
+  start_date date
+  end_date date
+  payment_method payment_method
+  status subscription_status
+}
+
+Table payments {
+  id uuid [pk]
+  client_id uuid [ref: - clients.id]
+  subscription_id uuid [unique, ref: - client_subscriptions.id]
+  amount decimal
+  paid_at timestamp
+  payment_date date
+  payment_method payment_method
+  transaction_id string
+  transaction_status transaction_status
+}
+
+// --- RESOURCES & CONTENT SECTION ---
+
+Table videos {
+  id uuid [pk]
+  coach_id uuid [ref: > coaches.id]
+  title string
+  description string
+  url string
+  type video_type
+  scheduled_at timestamp
+  is_active boolean
+}
+
+Table resources {
+  subscription_id uuid [pk, ref: > client_subscriptions.id]
+  resources_id uuid [pk] // Acts as the polymorphic ID
+  type resource_type
+  added_at timestamp
+}
+
+Table exercises {
+  id uuid [pk]
+  training_plan_id uuid [ref: > training_plans.id]
+  name string
+  muscle_groups "string[]"
+  required_equipment "string[]"
+  difficulty_level difficulty_level
+  instructions string
+  demo_url string
+}
+
+Table training_plans {
+  id uuid [pk]
+  name string
+  goals string
+  duration_weeks int
+}
+
+Table meals {
+  id uuid [pk]
+  diet_plan_id uuid [ref: > diet_plans.id]
+  name string
+  planned_day "string[]"
+  type meal_type
+  ingredient_list "string[]"
+  demo_url string
+}
+
+Table diet_plans {
+  id uuid [pk]
+  macros_nutritions "string[]"
+  micro_nutritions "string[]"
+  goals string
+  notes string
+}
+
+// --- TRACKING SECTION ---
+
+Table client_progress {
+  id uuid [pk]
+  client_id uuid [ref: > clients.id]
+  logged_at timestamp
+  height_in_cm decimal
+  weight_in_kg decimal
+  body_fat_percentage decimal
+}
+
+Table check_ins {
+  id uuid [pk]
+  progress_id uuid [ref: - client_progress.id]
+  coach_id uuid [ref: > coaches.id]
+  client_id uuid [ref: > clients.id]
+  client_notes string
+  coach_feedback string
+  status checkin_status
+  checkin_date timestamp
+}
+
+// --- POLYMORPHIC RELATIONSHIPS FOR RESOURCES ---
+// Note: DBML doesn't have native polymorphism, so we map the relations explicitly
+Ref: videos.id < resources.resources_id
+Ref: training_plans.id < resources.resources_id
+Ref: diet_plans.id < resources.resources_id
+
+// --- VISUAL GROUPING ---
+
+TableGroup User_Profiles {
+  users
+  coaches
+  clients
+}
+
+TableGroup Subscriptions {
+  subscription_plans
+  client_subscriptions
+  payments
+  bookings
+  consultation_slots
+}
+
+TableGroup Content {
+  videos
+  resources
+  training_plans
+  exercises
+  diet_plans
+  meals
+}
+
+TableGroup Tracking {
+  client_progress
+  check_ins
+}
