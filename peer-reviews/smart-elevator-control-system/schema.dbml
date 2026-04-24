@@ -1,0 +1,103 @@
+// Entities
+
+Table Buildings {
+    id uuid [pk]
+    name varchar(128) [not null]
+    address varchar(128) [not null]
+    localation varchar(128)
+    timezone datetime [not null]
+    createdAt datetime
+    updateAt datetime
+}
+
+Table Floors {
+    id uuid [pk]
+    buildingId uuid [not null]
+    shaftId uuid [not null]
+    number int [not null]
+    lable char(62) [not null]
+    createdAt datetime
+    updateAt datetime
+}
+
+Table ElevatorShafts {
+    id uuid [pk]
+    buildingId uuid [not null]
+    titalStops int [not null]
+    type enum("hydrolic", "traction")
+    lastInspaction datetime
+    createdAt datetime
+    updateAt datetime
+}
+
+Table Elevators {
+    id uuid [pk]
+    shaftId uuid [not null]
+    status enum("active", 'closed', "maintainance")
+    weightCapacityInKGs decimal(5, 2) [not null]
+    passangerCapacity int [not null]
+    brand varchar(128) [not null]
+    model varchar(128) [not null]
+    createdAt datetime
+    updateAt datetime
+}
+
+Table FloorAccess {
+    floorId uuid [pk]
+    elevatorId uuid [not null]
+    createdAt datetime
+}
+
+Table FloorRequests {
+    id uuid [pk]
+    elevatorId uuid [not null]
+    sourceFloorId uuid [not null]
+    destinationFloorId uuid [not null]
+    direction enum("up", "down", "idle")
+    requestType enum("internal", "external")
+    status enum("pending", "assigned", "completed")
+    createdAt datetime
+    updateAt datetime
+}
+
+Table TripLogs {
+    id uuid [pk]
+    floorRequestId uuid [not null]
+    startTime time [not null]
+    endTime time [not null]
+    waitTime time [not null]
+    travelTime time [not null]
+    passangerCoounts int
+    carryWeightInKGs decimal(5, 2) [not null]
+    type enum("normal", "emergency", "maintainance")
+    eneryConsumed decimal(5,2)
+}
+
+Table ElevatorMaintananceLogs {
+    id uuid [pk]
+    elevatorId uuid [not null]
+    technician varchar(256) [not null]
+    maintainanceTime datetime [not null]
+    downTime datetime [not null]
+    serviceType enum("preventive", "repair", "inspaction", "emergency callout")
+    issueFound varchar(1024) [not null]
+    actionTaken varchar(256) [not null]
+    serviceComponents varchar(256) [not null]
+    maintainanceCost decimal(10, 2) [not null]
+    maintanceStatus enum("scheduled", "in progress", "completed")
+    createdAt datetime
+    updateAt datetime
+}
+
+// Relationships
+
+ref: Buildings.id < ElevatorShafts.buildingId
+ref: Buildings.id < Floors.buildingId
+ref: ElevatorShafts.id - Elevators.shaftId
+ref: Floors.id < FloorAccess.floorId
+ref: Elevators.id < FloorAccess.elevatorId
+ref: Floors.id < FloorRequests.sourceFloorId
+ref: Floors.id < FloorRequests.destinationFloorId
+ref: Elevators.id < FloorRequests.elevatorId
+ref: Floors.id - TripLogs.floorRequestId
+ref: Elevators.id < ElevatorMaintananceLogs.elevatorId
